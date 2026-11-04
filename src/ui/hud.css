@@ -91,8 +91,6 @@ body {
 .role-badge:hover {
   background: rgba(56, 189, 248, 0.25);
 }
-.study-link { color:#cbd5e1; font-size:11px; text-decoration:none; padding:4px 8px; border:1px solid rgba(148,163,184,.28); border-radius:6px; cursor:pointer; background:transparent; -webkit-app-region:no-drag; }
-.study-link:hover { color:#fff; background:rgba(255,255,255,.1); }
 
 .listen-toggle-btn {
   display: flex;
@@ -385,8 +383,18 @@ pre {
 
 .input-wrapper {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
+
+.image-btn { flex:0 0 auto; width:32px; height:30px; border:1px solid rgba(148,163,184,.3); border-radius:6px; background:rgba(15,23,42,.8); color:#94a3b8; font-size:19px; cursor:pointer; }
+.image-btn, .image-chip button { -webkit-app-region:no-drag; }
+.image-btn svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vertical-align:middle; }
+.image-btn:hover { color:#38bdf8; border-color:#38bdf8; }
+.image-chip { display:flex; align-items:center; gap:4px; padding:2px; border:1px solid rgba(56,189,248,.45); border-radius:6px; }
+.image-chip[hidden] { display:none; }
+.image-chip img { width:28px; height:24px; object-fit:cover; border-radius:3px; }
+.image-chip button { border:0; background:transparent; color:#cbd5e1; cursor:pointer; font-size:16px; }
 
 #manualInput {
   flex: 1;

@@ -8,6 +8,7 @@ const ui = {
   customSpecializations: $('customSpecializations'), customLanguage: $('customLanguage'), customContext: $('customContext'),
   listenBtn: $('listenBtn'), listenLabel: $('listenLabel'), audioDot: $('audioDot')
 };
+let attachedImage = '';
 
 const defaults = { title: 'Senior AI / Machine Learning Engineer', seniority: 'Staff / Senior', specializations: ['LLMs', 'vLLM/TensorRT-LLM', 'PyTorch', 'RAG', 'Distributed Training', 'Quantization'], preferredLanguage: 'Python', customContext: '' };
 const presets = {
@@ -97,17 +98,21 @@ function parseEvents(stream, onEvent) {
   })();
 }
 
-async function ask(question) {
-  if (!question.trim() || controller) return;
+async function ask(question, image = '') {
+  if ((!question.trim() && !image) || controller) return;
   history.push({ speaker: 'interviewer', text: question.trim() }); history = history.slice(-20);
-  setMessage('YOU / QUERY:', question.trim()); controller = new AbortController();
+  setMessage('YOU / QUERY:', question.trim() || 'Question from attached image'); controller = new AbortController();
   ui.statusDot.classList.add('pulsing'); ui.latencyPill.textContent = 'Speaking...';
   $('stopBtn').style.display = 'inline-flex';
   try {
-    const response = await fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${password}` }, body: JSON.stringify({ question, role, history: history.slice(0, -1) }), signal: controller.signal });
+    const response = await fetch(image ? '/api/study' : '/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${password}` }, body: JSON.stringify({ question, image, subject: role.title, role, history: history.slice(0, -1) }), signal: controller.signal });
     if (response.status === 401) { sessionStorage.removeItem('copilot-password'); password = ''; showLogin(); throw new Error('Please sign in again.'); }
     if (!response.ok) throw new Error((await response.json()).error || 'Request failed.');
-    await parseEvents(response.body, (event, data) => {
+    if (image) {
+      const data = await response.json();
+      currentRawAnswer = data.answer || ''; resetCanvas(); renderAnswer(currentRawAnswer, false);
+      history.push({ speaker: 'candidate', text: currentRawAnswer }); history = history.slice(-20); sessionStorage.setItem('copilot-history', JSON.stringify(history));
+    } else await parseEvents(response.body, (event, data) => {
       if (event === 'start') { currentRawAnswer = ''; resetCanvas(); }
       if (event === 'token') { currentRawAnswer = data.accumulatedText; renderAnswer(currentRawAnswer); if (data.firstTokenMs) ui.latencyPill.textContent = `TTFT: ${data.firstTokenMs}ms`; }
       if (event === 'done') { renderAnswer(data.fullText || currentRawAnswer, false); ui.latencyPill.textContent = data.firstTokenMs ? `TTFT: ${data.firstTokenMs}ms` : 'Ready'; history.push({ speaker: 'candidate', text: data.fullText || currentRawAnswer }); history = history.slice(-20); sessionStorage.setItem('copilot-history', JSON.stringify(history)); }
@@ -170,7 +175,22 @@ function togglePushToListen() {
 function init() {
   ui.roleLabel.textContent = role.title;
   ui.listenBtn.addEventListener('click', togglePushToListen);
-  ui.sendBtn.addEventListener('click', () => { const q = ui.manualInput.value.trim(); if (q) { ui.manualInput.value = ''; ask(q); } });
+  const imageInput = $('questionImage');
+  const setImage = data => { attachedImage = data; $('imageThumb').src = data; $('imageChip').hidden = !data; };
+  const loadImage = async file => {
+    if (!file?.type?.startsWith('image/')) return;
+    try {
+      const bitmap = await createImageBitmap(file); const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
+      const data = canvas.toDataURL('image/jpeg', .82); if (data.length > 3_600_000) throw new Error('Image is too large; choose a smaller one.'); setImage(data);
+    } catch (error) { ui.latencyPill.textContent = error.message || 'Could not load image'; }
+  };
+  $('imageBtn').addEventListener('click', () => imageInput.click());
+  imageInput.addEventListener('change', e => loadImage(e.target.files[0]));
+  $('removeImage').addEventListener('click', () => { setImage(''); imageInput.value = ''; });
+  document.addEventListener('paste', e => { const item = [...(e.clipboardData?.items || [])].find(x => x.type.startsWith('image/')); if (item) { e.preventDefault(); loadImage(item.getAsFile()); } });
+  ui.sendBtn.addEventListener('click', () => { const q = ui.manualInput.value.trim(); if (q || attachedImage) { ui.manualInput.value = ''; const image = attachedImage; setImage(''); imageInput.value = ''; ask(q, image); } });
   ui.manualInput.addEventListener('keydown', e => { if (e.key === 'Enter') ui.sendBtn.click(); });
   $('stopBtn').onclick = () => { controller?.abort(); controller = null; ui.latencyPill.textContent = 'Stopped'; };
   ui.roleBadgeBtn.onclick = () => ui.roleModal.style.display = 'flex';

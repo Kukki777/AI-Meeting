@@ -18,7 +18,11 @@ const sendBtn = document.getElementById('sendBtn');
 const clickThroughBtn = document.getElementById('clickThroughBtn');
 const panicBtn = document.getElementById('panicBtn');
 const closeBtn = document.getElementById('closeBtn');
-const studyModeBtn = document.getElementById('studyModeBtn');
+const imageBtn = document.getElementById('imageBtn');
+const questionImage = document.getElementById('questionImage');
+const imageChip = document.getElementById('imageChip');
+const imageThumb = document.getElementById('imageThumb');
+let attachedImage = '';
 
 // Modal Elements
 const roleModal = document.getElementById('roleModal');
@@ -382,17 +386,47 @@ function setupIPCListeners() {
 
 // ── Event Handlers ──
 function setupEventListeners() {
-  studyModeBtn?.addEventListener('click', () => window.electronAPI?.openStudyWindow());
+  const setAttachedImage = data => { attachedImage = data; imageThumb.src = data; imageChip.hidden = !data; };
+  const loadQuestionImage = async file => {
+    if (!file?.type?.startsWith('image/')) return;
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
+      const data = canvas.toDataURL('image/jpeg', .82);
+      if (data.length > 3_600_000) throw new Error('Image is too large; choose a smaller one.');
+      setAttachedImage(data);
+    } catch (error) { tickerText.textContent = error.message || 'Could not load image.'; }
+  };
+  imageBtn?.addEventListener('click', () => questionImage.click());
+  questionImage?.addEventListener('change', e => loadQuestionImage(e.target.files[0]));
+  document.addEventListener('paste', e => {
+    const item = [...(e.clipboardData?.items || [])].find(x => x.type.startsWith('image/'));
+    if (item) { e.preventDefault(); loadQuestionImage(item.getAsFile()); }
+  });
+  document.getElementById('removeImage')?.addEventListener('click', () => { setAttachedImage(''); questionImage.value = ''; });
 
   // Manual Question Send
   const triggerSend = () => {
     const q = manualInput.value.trim();
-    if (!q) return;
+    if (!q && !attachedImage) return;
     speakerTag.textContent = 'YOU / QUERY:';
-    tickerText.textContent = q;
+    tickerText.textContent = q || 'Question from attached image';
     manualInput.value = '';
     if (window.electronAPI) {
-      window.electronAPI.askLLM(q);
+      if (attachedImage) {
+        const image = attachedImage; setAttachedImage(''); questionImage.value = '';
+        window.electronAPI.studyImageQuestion({ image, question: q, subject: 'General' }).then(answer => {
+          currentRawAnswer = answer; resetRenderState(); emptyState.style.display = 'none'; streamCanvas.style.display = 'flex'; renderFluidStream(answer, false);
+        }).catch(error => {
+          resetRenderState(); emptyState.style.display = 'none'; streamCanvas.style.display = 'flex';
+          const card = document.createElement('div'); card.className = 'stream-section speak-card';
+          const content = document.createElement('div'); content.className = 'section-content'; content.textContent = error.message || 'Could not answer this image.';
+          card.append(content); streamCanvas.append(card);
+        });
+      } else window.electronAPI.askLLM(q);
     }
   };
 
