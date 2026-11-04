@@ -225,6 +225,7 @@ Strictly format your response into the 3 glanceable blocks:
             messages: messages,
             temperature: 0.2,
             max_completion_tokens: 1000,
+            ...(m === 'qwen/qwen3.8-27b' ? { reasoning_effort: 'none' } : {}),
             stream: true
           }),
           signal
