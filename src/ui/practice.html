@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interview Practice</title>
+  <link rel="stylesheet" href="practice.css">
+</head>
+<body>
+  <main class="practice-shell">
+    <header class="topbar"><a href="index.html">← Back to Co-Pilot</a><span>INTERVIEW PRACTICE</span><span class="local-badge">Private · runs on this device</span></header>
+    <section class="intro"><p class="eyebrow">PREP MODE</p><h1>Practice your answer.</h1><p>Choose a role, try a mock question, then get a local checklist to strengthen your own response.</p></section>
+    <section class="practice-card">
+      <div class="controls">
+        <label for="roleSelect">Target role</label>
+        <select id="roleSelect"></select>
+        <button id="randomRole" class="secondary">Random role</button>
+        <button id="nextQuestion" class="secondary">New question</button>
+      </div>
+      <div class="question-box"><div class="question-meta"><span id="questionKind">Mock question</span><span id="questionNumber"></span></div><h2 id="questionText">Choose a role to begin.</h2></div>
+      <label class="answer-label" for="answerInput">Your practice answer</label>
+      <textarea id="answerInput" placeholder="Write the answer you would give in a mock interview…" rows="8"></textarea>
+      <div class="answer-actions"><span id="wordCount">0 words</span><div><button id="clearAnswer" class="secondary">Clear</button> <button id="reviewAnswer" class="primary">Review my answer</button></div></div>
+      <section id="feedback" class="feedback" aria-live="polite" hidden></section>
+      <p class="privacy-note">Feedback is a simple writing checklist, not an AI-generated answer. Your practice text stays on this device and is not sent to a server.</p>
+    </section>
+  </main>
+  <script src="practice.js"></script>
+</body>
+</html>
