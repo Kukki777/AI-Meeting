@@ -180,7 +180,8 @@ Strictly format your response into the 3 glanceable blocks:
 
   async studyImageQuestion({ image, question = '', subject = 'General' }) {
     const apiKey = process.env.GROQ_API_KEY || this.config.groqApiKey;
-    if (!apiKey) throw new Error('GROQ_API_KEY is not configured.');
+    const geminiKey = process.env.GEMINI_API_KEY || this.config.geminiApiKey;
+    if (!apiKey && !geminiKey) throw new Error('Add GROQ_API_KEY or GEMINI_API_KEY to the app .env file.');
     const task = question.trim() || 'Read the question shown in the image, answer it, and explain the reasoning step by step.';
     const requestBody = JSON.stringify({
         model: 'qwen/qwen3.8-27b',
@@ -193,26 +194,60 @@ Strictly format your response into the 3 glanceable blocks:
         reasoning_effort: 'low',
         stream: false
       });
-    let response;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-          body: requestBody,
-          signal: AbortSignal.timeout(25000)
-        });
-        break;
-      } catch (error) {
-        if (attempt === 1) throw new Error(`Could not reach Groq for the image request. Check your connection and try again. (${error.message})`);
-        await new Promise(resolve => setTimeout(resolve, 350));
+    let groqError = 'Groq image request failed.';
+    if (apiKey) {
+      let response;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            body: requestBody,
+            signal: AbortSignal.timeout(25000)
+          });
+          break;
+        } catch (error) {
+          groqError = `Groq connection failed: ${error.message}`;
+          if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 350));
+        }
+      }
+      if (response?.ok) {
+        const data = await response.json();
+        const answer = data.choices?.[0]?.message?.content;
+        if (answer) return answer;
+        groqError = 'Groq returned an empty answer.';
+      } else if (response) {
+        groqError = `Groq returned ${response.status}: ${(await response.text()).slice(0, 240)}`;
       }
     }
-    if (!response.ok) throw new Error(`Groq study request failed (${response.status}): ${(await response.text()).slice(0, 300)}`);
-    const data = await response.json();
-    const answer = data.choices?.[0]?.message?.content;
-    if (!answer) throw new Error('The model returned an empty answer. Try a clearer image or add a question.');
-    return answer;
+
+    if (geminiKey) {
+      const parsedImage = image.match(/^data:(image\/[a-z0-9.+-]+);base64,([\s\S]+)$/i);
+      const parts = [{ text: task }];
+      if (parsedImage) parts.push({ inlineData: { mimeType: parsedImage[1], data: parsedImage[2] } });
+      const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.5-flash-lite';
+      const fallbackBody = JSON.stringify({
+          systemInstruction: { parts: [{ text: `You are a patient study tutor. The subject is ${subject}. Read the supplied image carefully, identify the question, and provide the answer with a clear explanation and steps. For multiple choice, state the option and explain why. If text is unclear, say what is unreadable instead of guessing. Match the learner's language when practical.` }] },
+          contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.3, maxOutputTokens: 1400 }
+        });
+      let fallback;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          fallback = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
+            body: fallbackBody, signal: AbortSignal.timeout(25000)
+          });
+          if (fallback.status !== 503 || attempt === 1) break;
+        } catch (error) { if (attempt === 1) throw new Error(`${groqError}; Gemini fallback could not connect: ${error.message}`); }
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      if (!fallback.ok) throw new Error(`${groqError}; Gemini fallback failed (${fallback.status}): ${(await fallback.text()).slice(0, 240)}`);
+      const result = await fallback.json();
+      const answer = result.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('').trim();
+      if (answer) return answer;
+      throw new Error(`${groqError}; Gemini returned an empty answer.`);
+    }
+    throw new Error(`${groqError}. Check the network or add GEMINI_API_KEY for image fallback.`);
   }
 
   /**
