@@ -25,10 +25,10 @@ function systemPrompt(role) {
 
 function selectGroqModel(query) {
   const q = (query || '').toLowerCase();
-  if (['design', 'architect', 'scale', 'distributed', 'tradeoff', 'trade-off'].some(x => q.includes(x))) return 'llama-3.3-70b-versatile';
-  if (['implement', 'code', 'algorithm', 'complexity', 'leetcode', 'write a'].some(x => q.includes(x))) return 'llama-3.1-8b-instant';
-  if (['tell me about', 'describe a time', 'experience with', 'how did you'].some(x => q.includes(x))) return 'llama-3.3-70b-versatile';
-  return process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  if (['design', 'architect', 'scale', 'distributed', 'tradeoff', 'trade-off'].some(x => q.includes(x))) return 'openai/gpt-oss-120b';
+  if (['implement', 'code', 'algorithm', 'complexity', 'leetcode', 'write a'].some(x => q.includes(x))) return 'openai/gpt-oss-20b';
+  if (['tell me about', 'describe a time', 'experience with', 'how did you'].some(x => q.includes(x))) return 'openai/gpt-oss-120b';
+  return process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 }
 
 function sse(res, event, payload) { res.write(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`); }
@@ -38,20 +38,20 @@ async function forwardProviderStream({ provider, query, history, role, signal, o
   if (provider === 'groq') {
     const key = process.env.GROQ_API_KEY;
     if (!key) throw new Error('GROQ_API_KEY is not configured.');
-    const models = [...new Set([selectGroqModel(query), process.env.GROQ_MODEL, 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'].filter(Boolean))];
+    const models = [...new Set([selectGroqModel(query), process.env.GROQ_MODEL, 'openai/gpt-oss-120b', 'openai/gpt-oss-20b'].filter(Boolean))];
     const messages = [{ role: 'system', content: prompt }, ...history.slice(-6).map(h => ({ role: h.speaker === 'interviewer' ? 'user' : 'assistant', content: h.text })), { role: 'user', content: query }];
     let response;
     let model;
     for (const candidate of models) {
       const attempt = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: candidate, messages, temperature: 0.2, max_tokens: 1000, stream: true }), signal
+        body: JSON.stringify({ model: candidate, messages, temperature: 0.2, max_completion_tokens: 1000, stream: true }), signal
       });
       if (attempt.ok) { response = attempt; model = candidate; break; }
       const details = await attempt.text();
       if (attempt.status < 500 && ![400, 404, 422].includes(attempt.status)) throw new Error(`Groq error (${attempt.status}): ${details.slice(0, 300)}`);
     }
-    if (!response) throw new Error('All configured Groq models failed.');
+    if (!response) throw new Error(`All configured Groq models failed (${models.join(', ')}). Check the API key, model availability, and Groq account access.`);
     onStart(`Groq (${model})`);
     return readSSE(response, data => data.choices?.[0]?.delta?.content, onToken);
   }

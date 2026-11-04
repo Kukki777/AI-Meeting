@@ -187,20 +187,20 @@ Strictly format your response into the 3 glanceable blocks:
     // System design / architecture → needs deep reasoning, use 70B
     if (q.includes('design') || q.includes('architect') || q.includes('scale') ||
         q.includes('distributed') || q.includes('tradeoff') || q.includes('trade-off')) {
-      return 'llama-3.3-70b-versatile';
+      return 'openai/gpt-oss-120b';
     }
     // Code / DSA → 8B is plenty fast and accurate
     if (q.includes('implement') || q.includes('code') || q.includes('algorithm') ||
         q.includes('complexity') || q.includes('leetcode') || q.includes('write a')) {
-      return 'llama-3.1-8b-instant';
+      return 'openai/gpt-oss-20b';
     }
     // Behavioral → 70B for coherent narrative
     if (q.includes('tell me about') || q.includes('describe a time') ||
         q.includes('experience with') || q.includes('how did you')) {
-      return 'llama-3.3-70b-versatile';
+      return 'openai/gpt-oss-120b';
     }
     // Default to configured model
-    return this.config.groqModel || 'llama-3.3-70b-versatile';
+    return this.config.groqModel || 'openai/gpt-oss-120b';
   }
 
   /**
@@ -219,8 +219,8 @@ Strictly format your response into the 3 glanceable blocks:
     const candidateModels = [
       this._selectGroqModel(userQuery),  // Smart-routed primary model
       this.config.groqModel,
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant',
+      'openai/gpt-oss-120b',
+      'openai/gpt-oss-20b',
     ].filter(Boolean).filter((m, i, arr) => arr.indexOf(m) === i); // dedupe
 
     const startTime = Date.now();
@@ -239,7 +239,7 @@ Strictly format your response into the 3 glanceable blocks:
             model: m,
             messages: messages,
             temperature: 0.2,
-            max_tokens: 1000,
+            max_completion_tokens: 1000,
             stream: true
           }),
           signal

@@ -24,7 +24,7 @@ class Config {
     
     // Model preferences
     this.primaryLLM = process.env.PRIMARY_LLM || 'groq'; // 'groq' | 'gemini'
-    this.groqModel = process.env.GROQ_MODEL || 'qwen/qwen3.8-27b';
+    this.groqModel = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     this.groqWhisperModel = process.env.GROQ_WHISPER_MODEL || 'whisper-large-v3';
     this.geminiModel = process.env.GEMINI_MODEL || 'gemini-2.0-flash-lite';
     
