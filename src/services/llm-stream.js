@@ -180,27 +180,11 @@ Strictly format your response into the 3 glanceable blocks:
 
   /**
    * Picks the best Groq model based on detected question type.
-   * Heavy reasoning questions → 70B. Code/DSA → 8B (3-4x faster). Default → configured model.
+   * Uses the configured Groq model so desktop behavior stays consistent across question types.
    */
   _selectGroqModel(userQuery) {
-    const q = (userQuery || '').toLowerCase();
-    // System design / architecture → needs deep reasoning, use 70B
-    if (q.includes('design') || q.includes('architect') || q.includes('scale') ||
-        q.includes('distributed') || q.includes('tradeoff') || q.includes('trade-off')) {
-      return 'openai/gpt-oss-20b';
-    }
-    // Code / DSA → 8B is plenty fast and accurate
-    if (q.includes('implement') || q.includes('code') || q.includes('algorithm') ||
-        q.includes('complexity') || q.includes('leetcode') || q.includes('write a')) {
-      return 'openai/gpt-oss-20b';
-    }
-    // Behavioral → 70B for coherent narrative
-    if (q.includes('tell me about') || q.includes('describe a time') ||
-        q.includes('experience with') || q.includes('how did you')) {
-      return 'openai/gpt-oss-20b';
-    }
-    // Default to configured model
-    return this.config.groqModel || 'openai/gpt-oss-20b';
+    // Keep the original Mac app model for every question type.
+    return this.config.groqModel || 'qwen/qwen3.8-27b';
   }
 
   /**
@@ -217,8 +201,9 @@ Strictly format your response into the 3 glanceable blocks:
     ];
 
     const candidateModels = [
-      this._selectGroqModel(userQuery),  // Smart-routed primary model
+      this._selectGroqModel(userQuery),  // Configured desktop model
       this.config.groqModel,
+      'qwen/qwen3.8-27b',
       'openai/gpt-oss-20b',
       'openai/gpt-oss-120b',
     ].filter(Boolean).filter((m, i, arr) => arr.indexOf(m) === i); // dedupe
