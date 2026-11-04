@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Co-Pilot Web</title>
+  <link rel="stylesheet" href="hud.css">
+</head>
+<body>
+  <div class="hud-container" id="hudContainer">
+    <!-- Top Header Bar (Draggable) -->
+    <header class="hud-header" id="dragHeader">
+      <div class="header-left">
+        <span class="status-dot active" id="statusDot"></span>
+        <span class="hud-title">CO-PILOT</span>
+        <button class="role-badge" id="roleBadgeBtn" title="Click to Change Role">
+          <span id="roleLabel">AI / ML Engineer</span>
+          <span class="caret">▾</span>
+        </button>
+      </div>
+      
+      <div class="header-center">
+        <button class="listen-toggle-btn" id="listenBtn" title="Click or press Ctrl+Space to start or finish capture">
+          <span class="mic-icon" id="micIcon">🎙️</span>
+          <span id="listenLabel">Listening</span>
+          <span class="audio-dot" id="audioDot"></span>
+        </button>
+        <span class="latency-pill" id="latencyPill">Ready</span>
+      </div>
+
+      <div class="header-right">
+        <button class="icon-btn stop-btn" id="stopBtn" title="Stop current answer" style="display:none; color:#f59e0b;">⏹</button>
+        <button class="icon-btn" id="clickThroughBtn" title="Click-through is available only in the desktop app">👻</button>
+        <button class="icon-btn" id="panicBtn" title="Hide or show this panel">👁️</button>
+        <button class="icon-btn" id="closeBtn" title="Hide panel">✕</button>
+      </div>
+    </header>
+
+    <!-- Real-time Live Audio Transcription Ticker -->
+    <div class="transcript-ticker" id="transcriptTicker">
+      <span class="speaker-tag" id="speakerTag">INTERVIEWER:</span>
+      <span class="ticker-text" id="tickerText">Listening for questions in real time...</span>
+    </div>
+
+    <!-- Main Response Feed (Fluid Real-Time Stream Canvas) -->
+    <main class="response-viewport" id="responseViewport">
+      <div class="empty-state" id="emptyState">
+        <div class="tip-card">
+          <p><strong>🎯 Co-Pilot Web</strong></p>
+          <p>Ask a question or grant microphone access. Answers stream as they are generated.</p>
+          <div class="hotkey-legend">
+            <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> Hide/Show</span>
+            <span>Microphone permission required</span>
+            <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> Clear History</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fluid streaming answer canvas (Progressive Typewriter) -->
+      <div class="stream-canvas" id="streamCanvas" style="display: none;"></div>
+    </main>
+
+    <!-- Bottom Input Bar for Manual Input -->
+    <footer class="hud-footer">
+      <div class="input-wrapper">
+        <input 
+          type="text" 
+          id="manualInput" 
+          placeholder="Type or paste question... (Enter to ask)" 
+          autocomplete="off" 
+          spellcheck="false"
+        />
+        <button id="sendBtn" class="send-btn">➤</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Role Customization Modal -->
+  <div class="modal-backdrop" id="roleModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Select Target Interview Role</h3>
+        <button class="modal-close-btn" id="closeModalBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <label>Quick Presets:</label>
+        <div class="preset-grid">
+          <button class="preset-btn" data-preset="ai-engineer">🤖 Senior AI / ML Engineer</button>
+          <button class="preset-btn" data-preset="mlops-engineer">⚙️ Senior MLOps Engineer</button>
+          <button class="preset-btn" data-preset="backend-architect">🏗️ Staff Backend / Distributed</button>
+          <button class="preset-btn" data-preset="fullstack-engineer">💻 Lead Full-Stack</button>
+          <button class="preset-btn" data-preset="devops-cloud">☁️ Cloud & DevOps (K8s/AWS)</button>
+        </div>
+
+        <hr class="modal-divider" />
+
+        <label for="customRoleTitle">Or Custom Role Title:</label>
+        <input type="text" id="customRoleTitle" placeholder="e.g. Lead Quantitative Developer / NLP Engineer" />
+
+        <label for="customSpecializations">Core Skills / Focus Areas (comma-separated):</label>
+        <input type="text" id="customSpecializations" placeholder="e.g. PyTorch, CUDA, Triton, vLLM, DeepSpeed" />
+
+        <label for="customLanguage">Primary Coding Language:</label>
+        <input type="text" id="customLanguage" placeholder="e.g. Python, C++, Go, TypeScript" />
+
+        <label for="customContext">Resume Highlights / Specific Tech Stack Experience:</label>
+        <textarea id="customContext" rows="3" placeholder="Briefly mention your actual past projects or architecture you want the AI to reference..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveRoleBtn">Apply Persona</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

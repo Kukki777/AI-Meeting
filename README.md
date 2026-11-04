@@ -53,6 +53,8 @@ See `.env.example` for supported variables. `GROQ_API_KEY` is used for Whisper a
 
 This project is a native Electron desktop app, not a web app. Vercel does not package or host Electron desktop applications. To use Vercel, build a separate web application and server-side API, then store provider keys in Vercel environment variables. Do not put provider keys in browser code.
 
+A separate browser implementation is provided in [`vercel/`](vercel/README.md). Deploy that folder as the Vercel project root; the Electron app remains the desktop version.
+
 ## Project layout
 
 ```text
