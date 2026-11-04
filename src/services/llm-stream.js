@@ -178,6 +178,32 @@ Strictly format your response into the 3 glanceable blocks:
     return accumulatedText;
   }
 
+  async studyImageQuestion({ image, question = '', subject = 'General' }) {
+    const apiKey = process.env.GROQ_API_KEY || this.config.groqApiKey;
+    if (!apiKey) throw new Error('GROQ_API_KEY is not configured.');
+    const task = question.trim() || 'Read the question shown in the image, answer it, and explain the reasoning step by step.';
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'qwen/qwen3.8-27b',
+        messages: [
+          { role: 'system', content: `You are a patient study tutor. The subject is ${subject}. Read the supplied image carefully, identify the question, and provide the answer with a clear explanation and steps. For multiple choice, state the option and explain why. If text is unclear, say exactly what is unreadable instead of guessing. Match the learner's language when practical.` },
+          { role: 'user', content: [{ type: 'text', text: task }, ...(image ? [{ type: 'image_url', image_url: { url: image } }] : [])] }
+        ],
+        temperature: 0.3,
+        max_completion_tokens: 1400,
+        reasoning_effort: 'low',
+        stream: false
+      })
+    });
+    if (!response.ok) throw new Error(`Groq study request failed (${response.status}): ${(await response.text()).slice(0, 300)}`);
+    const data = await response.json();
+    const answer = data.choices?.[0]?.message?.content;
+    if (!answer) throw new Error('The model returned an empty answer. Try a clearer image or add a question.');
+    return answer;
+  }
+
   /**
    * Picks the best Groq model based on detected question type.
    * Uses the configured Groq model so desktop behavior stays consistent across question types.

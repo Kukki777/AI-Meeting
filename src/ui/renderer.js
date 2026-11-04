@@ -18,6 +18,7 @@ const sendBtn = document.getElementById('sendBtn');
 const clickThroughBtn = document.getElementById('clickThroughBtn');
 const panicBtn = document.getElementById('panicBtn');
 const closeBtn = document.getElementById('closeBtn');
+const studyModeBtn = document.getElementById('studyModeBtn');
 
 // Modal Elements
 const roleModal = document.getElementById('roleModal');
@@ -381,6 +382,8 @@ function setupIPCListeners() {
 
 // ── Event Handlers ──
 function setupEventListeners() {
+  studyModeBtn?.addEventListener('click', () => window.electronAPI?.openStudyWindow());
+
   // Manual Question Send
   const triggerSend = () => {
     const q = manualInput.value.trim();

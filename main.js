@@ -11,6 +11,7 @@ if (process.platform === 'win32') {
 }
 
 let mainWindow = null;
+let studyWindow = null;
 const roleEngine = new RoleEngine();
 const llmService = new LLMStreamService(config);
 const sttService = new STTStreamService(config);
@@ -228,6 +229,31 @@ function setupIPCHandlers() {
       }
       return { success: false, error: error.message };
     }
+  });
+
+  // Abort active stream
+  ipcMain.handle('study-image-question', async (_event, payload = {}) => {
+    const image = payload.image;
+    if (typeof image !== 'string' || (image && !/^data:image\/(jpeg|png|webp);base64,/i.test(image)) || image.length > 4_000_000) {
+      throw new Error('Choose a JPEG, PNG, or WebP image under 3 MB.');
+    }
+    const question = typeof payload.question === 'string' ? payload.question.slice(0, 4000) : '';
+    if (!image && !question.trim()) throw new Error('Add an image or type a study question.');
+    const subject = typeof payload.subject === 'string' ? payload.subject.slice(0, 80) : 'General';
+    return llmService.studyImageQuestion({ image, question, subject });
+  });
+
+  ipcMain.handle('open-study-window', () => {
+    if (studyWindow && !studyWindow.isDestroyed()) { studyWindow.focus(); return true; }
+    studyWindow = new BrowserWindow({
+      width: 1040, height: 820, minWidth: 720, minHeight: 600,
+      title: 'Study Mode', show: false, backgroundColor: '#101827',
+      webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
+    });
+    studyWindow.loadFile(path.join(__dirname, 'src/ui/study.html'));
+    studyWindow.once('ready-to-show', () => studyWindow && studyWindow.show());
+    studyWindow.on('closed', () => { studyWindow = null; });
+    return true;
   });
 
   // Abort active stream

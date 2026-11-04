@@ -2,7 +2,8 @@
   "version": 2,
   "functions": {
     "api/ask.js": { "maxDuration": 60 },
-    "api/transcribe.js": { "maxDuration": 30 }
+    "api/transcribe.js": { "maxDuration": 30 },
+    "api/study.js": { "maxDuration": 60 }
   },
   "headers": [
     {
