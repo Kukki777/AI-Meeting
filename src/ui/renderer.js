@@ -395,7 +395,7 @@ function setupEventListeners() {
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale));
       canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
-      const data = canvas.toDataURL('image/jpeg', .82);
+      const data = canvas.toDataURL('image/jpeg', .72);
       if (data.length > 3_600_000) throw new Error('Image is too large; choose a smaller one.');
       setAttachedImage(data);
     } catch (error) { tickerText.textContent = error.message || 'Could not load image.'; }

@@ -182,16 +182,16 @@ Strictly format your response into the 3 glanceable blocks:
     const apiKey = process.env.GROQ_API_KEY || this.config.groqApiKey;
     const geminiKey = process.env.GEMINI_API_KEY || this.config.geminiApiKey;
     if (!apiKey && !geminiKey) throw new Error('Add GROQ_API_KEY or GEMINI_API_KEY to the app .env file.');
-    const task = question.trim() || 'Read the question shown in the image, answer it, and explain the reasoning step by step.';
+    const task = question.trim() || 'Read the image and answer the question. Be concise: give the answer first, then only the key steps.';
     const requestBody = JSON.stringify({
         model: 'qwen/qwen3.8-27b',
         messages: [
-          { role: 'system', content: `You are a patient study tutor. The subject is ${subject}. Read the supplied image carefully, identify the question, and provide the answer with a clear explanation and steps. For multiple choice, state the option and explain why. If text is unclear, say exactly what is unreadable instead of guessing. Match the learner's language when practical.` },
+          { role: 'system', content: `You are a fast, accurate tutor. Subject: ${subject}. Read the image and answer directly. Put the answer first, then give only the essential explanation in at most 5 short bullet points. For multiple choice, give the option and one reason. If unreadable, say so. Use the learner's language.` },
           { role: 'user', content: [{ type: 'text', text: task }, ...(image ? [{ type: 'image_url', image_url: { url: image } }] : [])] }
         ],
-        temperature: 0.3,
-        max_completion_tokens: 1400,
-        reasoning_effort: 'low',
+        temperature: 0.2,
+        max_completion_tokens: 700,
+        reasoning_effort: 'none',
         stream: false
       });
     let groqError = 'Groq image request failed.';
@@ -203,7 +203,7 @@ Strictly format your response into the 3 glanceable blocks:
             method: 'POST',
             headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
             body: requestBody,
-            signal: AbortSignal.timeout(25000)
+            signal: AbortSignal.timeout(12000)
           });
           break;
         } catch (error) {
@@ -228,7 +228,7 @@ Strictly format your response into the 3 glanceable blocks:
       const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.5-flash-lite';
       const fallbackBody = JSON.stringify({
           systemInstruction: { parts: [{ text: `You are a patient study tutor. The subject is ${subject}. Read the supplied image carefully, identify the question, and provide the answer with a clear explanation and steps. For multiple choice, state the option and explain why. If text is unclear, say what is unreadable instead of guessing. Match the learner's language when practical.` }] },
-          contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.3, maxOutputTokens: 1400 }
+          contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, maxOutputTokens: 700 }
         });
       let fallback;
       for (let attempt = 0; attempt < 2; attempt++) {

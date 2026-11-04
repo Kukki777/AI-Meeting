@@ -14,14 +14,14 @@ module.exports = async function handler(req, res) {
   if (!key && !geminiKey) return res.status(503).json({ error: 'Set GROQ_API_KEY or GEMINI_API_KEY in Vercel environment variables.' });
 
   try {
-    const task = question.trim() || 'Read the question shown in the image, answer it, and explain the reasoning step by step.';
+    const task = question.trim() || 'Read the image and answer the question. Be concise: give the answer first, then only the key steps.';
     const requestBody = JSON.stringify({
         model: 'qwen/qwen3.8-27b',
         messages: [
-          { role: 'system', content: `You are a patient study tutor. The subject is ${subject.slice(0, 80)}. Read the supplied image carefully, identify the question, and provide the answer with a clear explanation and steps. For multiple choice, state the option and explain why. If text is unclear, say exactly what is unreadable instead of guessing. Match the learner's language when practical.` },
+          { role: 'system', content: `You are a fast, accurate tutor. Subject: ${subject.slice(0, 80)}. Read the image and answer directly. Put the answer first, then give only the essential explanation in at most 5 short bullet points. For multiple choice, give the option and one reason. If unreadable, say so. Use the learner's language.` },
           { role: 'user', content: [{ type: 'text', text: task }, ...(image ? [{ type: 'image_url', image_url: { url: image } }] : [])] }
         ],
-        temperature: 0.3, max_completion_tokens: 1400, reasoning_effort: 'low', stream: false
+        temperature: 0.2, max_completion_tokens: 700, reasoning_effort: 'none', stream: false
       });
     let groqError = 'Groq image request failed.';
     let upstream;
@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
         try {
           upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-            body: requestBody, signal: AbortSignal.timeout(25000)
+            body: requestBody, signal: AbortSignal.timeout(12000)
           });
           break;
         } catch (error) {
@@ -48,12 +48,12 @@ module.exports = async function handler(req, res) {
 
     if (!geminiKey) return res.status(502).json({ error: `${groqError}. Configure GEMINI_API_KEY to enable image fallback.` });
     const parsedImage = image.match(/^data:(image\/[a-z0-9.+-]+);base64,([\s\S]+)$/i);
-    const parts = [{ text: question.trim() || 'Read the question shown in the image, answer it, and explain the reasoning step by step.' }];
+    const parts = [{ text: question.trim() || 'Read the image and answer the question. Be concise: give the answer first, then only the key steps.' }];
     if (parsedImage) parts.push({ inlineData: { mimeType: parsedImage[1], data: parsedImage[2] } });
     const model = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.5-flash-lite';
     const fallbackBody = JSON.stringify({
-        systemInstruction: { parts: [{ text: `You are a patient study tutor. The subject is ${subject.slice(0, 80)}. Read the supplied image carefully, identify the question, and provide the answer with a clear explanation and steps. For multiple choice, state the option and explain why. If text is unclear, say what is unreadable instead of guessing. Match the learner's language when practical.` }] },
-        contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.3, maxOutputTokens: 1400 }
+        systemInstruction: { parts: [{ text: `You are a fast, accurate tutor. Subject: ${subject.slice(0, 80)}. Read the image and answer directly. Put the answer first, then give only the essential explanation in at most 5 short bullet points. For multiple choice, give the option and one reason. If unreadable, say so. Use the learner's language.` }] },
+        contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, maxOutputTokens: 700 }
       });
     let fallback;
     for (let attempt = 0; attempt < 2; attempt++) {
