@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, screen, desktopCapturer } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, screen, desktopCapturer, clipboard } = require('electron');
 const path = require('path');
 const config = require('./src/core/config');
 const RoleEngine = require('./src/core/role-engine');
@@ -124,6 +124,7 @@ function registerShortcuts() {
 
 // ── Wire Streaming LLM & STT to IPC ──
 function setupIPCHandlers() {
+  ipcMain.handle('paste-text', () => clipboard.readText());
   // Manual or Auto Question Submission
   ipcMain.handle('ask-llm', async (_event, questionText) => {
     if (!questionText || !questionText.trim()) return;

@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   processAudioChunk: (arrayBuffer) => ipcRenderer.invoke('process-audio-chunk', arrayBuffer),
   abortLLM: () => ipcRenderer.invoke('abort-llm'),
   studyImageQuestion: (payload) => ipcRenderer.invoke('study-image-question', payload),
+  pasteText: () => ipcRenderer.invoke('paste-text'),
   
   // Audio trigger shortcut
   onTriggerAudioCapture: (cb) => ipcRenderer.on('trigger-audio-capture', (e) => cb()),

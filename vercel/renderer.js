@@ -187,6 +187,13 @@ function init() {
     } catch (error) { ui.latencyPill.textContent = error.message || 'Could not load image'; }
   };
   $('imageBtn').addEventListener('click', () => imageInput.click());
+  $('pasteTextBtn').addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) { const input = ui.manualInput; input.setRangeText(text, input.selectionStart, input.selectionEnd, 'end'); input.focus(); }
+      else ui.latencyPill.textContent = 'Clipboard has no text';
+    } catch (_) { ui.latencyPill.textContent = 'Allow clipboard access, or focus the box and press ⌘V / Ctrl+V'; }
+  });
   imageInput.addEventListener('change', e => loadImage(e.target.files[0]));
   $('removeImage').addEventListener('click', () => { setImage(''); imageInput.value = ''; });
   document.addEventListener('paste', e => { const item = [...(e.clipboardData?.items || [])].find(x => x.type.startsWith('image/')); if (item) { e.preventDefault(); loadImage(item.getAsFile()); } });

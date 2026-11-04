@@ -401,6 +401,12 @@ function setupEventListeners() {
     } catch (error) { tickerText.textContent = error.message || 'Could not load image.'; }
   };
   imageBtn?.addEventListener('click', () => questionImage.click());
+  document.getElementById('pasteTextBtn')?.addEventListener('click', async () => {
+    try {
+      const text = await window.electronAPI?.pasteText();
+      if (text) { manualInput.setRangeText(text, manualInput.selectionStart, manualInput.selectionEnd, 'end'); manualInput.focus(); }
+    } catch (_) { tickerText.textContent = 'Clipboard unavailable. Focus the question box and press ⌘V.'; }
+  });
   questionImage?.addEventListener('change', e => loadQuestionImage(e.target.files[0]));
   document.addEventListener('paste', e => {
     const item = [...(e.clipboardData?.items || [])].find(x => x.type.startsWith('image/'));
