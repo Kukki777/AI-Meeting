@@ -1,0 +1,15 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+release/
+out/
+*.exe
+*.dll
+*.pak
+*.bin
+*.dmg
+*.zip
+.DS_Store
+npm-debug.log*

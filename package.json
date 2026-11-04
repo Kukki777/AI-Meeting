@@ -1,0 +1,28 @@
+{
+  "name": "stealth-interview-agent",
+  "version": "1.0.0",
+  "description": "Undetectable, Ultra-Low Latency Universal Interview Assistant",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging"
+  },
+  "keywords": [
+    "interview-assistant",
+    "stealth",
+    "low-latency",
+    "transcription",
+    "ai"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "dependencies": {
+    "@google/genai": "^2.10.0",
+    "dotenv": "^16.6.1",
+    "marked": "^15.0.12",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^45.2.1"
+  }
+}
