@@ -92,16 +92,6 @@ body {
   background: rgba(56, 189, 248, 0.25);
 }
 
-.practice-link {
-  color: #cbd5e1;
-  font-size: 11px;
-  text-decoration: none;
-  padding: 4px 8px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 6px;
-}
-.practice-link:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
-
 .listen-toggle-btn {
   display: flex;
   align-items: center;
