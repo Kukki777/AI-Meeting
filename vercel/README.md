@@ -10,7 +10,7 @@ This is a separate browser app. It preserves the desktop app's role-aware prompt
    - `APP_PASSWORD`: a long, unique password (required; requests fail closed without it).
    - `GROQ_API_KEY`: required for Whisper and recommended for Groq chat.
    - `PRIMARY_LLM=groq` (or `gemini`).
-   - `GROQ_MODEL=openai/gpt-oss-120b` and `GROQ_WHISPER_MODEL=whisper-large-v3-turbo` (optional defaults).
+   - `GROQ_MODEL=openai/gpt-oss-20b` and `GROQ_WHISPER_MODEL=whisper-large-v3-turbo` (optional defaults).
    - `GEMINI_API_KEY` and `GEMINI_MODEL=gemini-2.0-flash-lite` (optional fallback).
 4. Deploy. Open the HTTPS URL, enter the app password, and grant microphone permission.
 

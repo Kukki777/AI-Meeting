@@ -25,10 +25,10 @@ function systemPrompt(role) {
 
 function selectGroqModel(query) {
   const q = (query || '').toLowerCase();
-  if (['design', 'architect', 'scale', 'distributed', 'tradeoff', 'trade-off'].some(x => q.includes(x))) return 'openai/gpt-oss-120b';
+  if (['design', 'architect', 'scale', 'distributed', 'tradeoff', 'trade-off'].some(x => q.includes(x))) return 'openai/gpt-oss-20b';
   if (['implement', 'code', 'algorithm', 'complexity', 'leetcode', 'write a'].some(x => q.includes(x))) return 'openai/gpt-oss-20b';
-  if (['tell me about', 'describe a time', 'experience with', 'how did you'].some(x => q.includes(x))) return 'openai/gpt-oss-120b';
-  return process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+  if (['tell me about', 'describe a time', 'experience with', 'how did you'].some(x => q.includes(x))) return 'openai/gpt-oss-20b';
+  return process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 }
 
 function sse(res, event, payload) { res.write(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`); }
@@ -38,7 +38,7 @@ async function forwardProviderStream({ provider, query, history, role, signal, o
   if (provider === 'groq') {
     const key = process.env.GROQ_API_KEY;
     if (!key) throw new Error('GROQ_API_KEY is not configured.');
-    const models = [...new Set([selectGroqModel(query), process.env.GROQ_MODEL, 'openai/gpt-oss-120b', 'openai/gpt-oss-20b'].filter(Boolean))];
+    const models = [...new Set([selectGroqModel(query), 'openai/gpt-oss-20b', process.env.GROQ_MODEL, 'openai/gpt-oss-120b'].filter(Boolean))];
     const messages = [{ role: 'system', content: prompt }, ...history.slice(-6).map(h => ({ role: h.speaker === 'interviewer' ? 'user' : 'assistant', content: h.text })), { role: 'user', content: query }];
     let response;
     let model;
