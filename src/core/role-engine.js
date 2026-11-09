@@ -50,13 +50,20 @@ class RoleEngine {
         specializations: ['Kubernetes (EKS/GKE)', 'Terraform / IaC', 'AWS / GCP Cloud Architecture', 'Observability (Datadog/Prometheus)', 'Zero-Trust Security'],
         preferredLanguage: 'Go / Bash / Python',
         customContext: 'Focus on multi-region failover, container security, cost optimization, GitOps (ArgoCD), and infrastructure resilience.'
+      },
+      'software-developer': {
+        title: 'Software Developer',
+        seniority: 'Software Engineer',
+        specializations: ['C++17, Data Structures & Algorithms', 'JavaScript / TypeScript and Web Development', 'Node.js APIs and backend services', 'MongoDB schemas, indexes, aggregation, and transactions', 'LLM APIs, streaming, embeddings, and RAG integrations'],
+        preferredLanguage: 'C++17 for algorithm problems; JavaScript / Node.js for web and backend questions',
+        customContext: 'For algorithm or coding problems, present the solution in this order: (1) a clear approach with key insight and time/space complexity, (2) language-neutral pseudocode, and (3) a complete, correct C++17 solution. For web development, answer with practical JavaScript or TypeScript examples. For backend questions, use Node.js and explain API design, async behavior, validation, errors, and security as relevant. For MongoDB, cover document modeling, indexes, queries/aggregation, and consistency when relevant. For LLM integration questions, cover provider APIs, prompts, streaming, embeddings/RAG, latency, and safe handling of API keys. Do not force C++ on web/backend questions; use the language requested by the question. For non-coding questions, explain the concept directly and include code only when useful.'
       }
     };
   }
 
   setPreset(presetId) {
     if (this.presets[presetId]) {
-      this.currentRole = { ...this.presets[presetId] };
+      this.currentRole = { ...this.presets[presetId], presetId };
       return true;
     }
     return false;
@@ -68,7 +75,8 @@ class RoleEngine {
       seniority: roleData.seniority || 'Senior',
       specializations: Array.isArray(roleData.specializations) ? roleData.specializations : (roleData.specializations || '').split(',').map(s => s.trim()),
       preferredLanguage: roleData.preferredLanguage || 'Python',
-      customContext: roleData.customContext || ''
+      customContext: roleData.customContext || '',
+      presetId: roleData.presetId || null
     };
   }
 
@@ -82,6 +90,18 @@ class RoleEngine {
   generateSystemPrompt() {
     const { title, seniority, specializations, preferredLanguage, customContext } = this.currentRole;
     const specStr = Array.isArray(specializations) ? specializations.join(', ') : specializations;
+
+    const softwareDeveloperInstructions = this.currentRole.presetId === 'software-developer' ? `
+
+### SOFTWARE DEVELOPER ANSWER RULES:
+- For DSA, coding challenges, or algorithm questions, ALWAYS use these sections in this exact order: **APPROACH** (explain the key idea and time/space complexity), **PSEUDOCODE** (language-neutral steps), then **C++17 CODE** (complete runnable solution). Keep the explanation concise and do not omit pseudocode.
+- For JavaScript/web development questions, answer the actual question using JavaScript or TypeScript as appropriate, including browser/UI concepts when relevant.
+- For Node.js/backend questions, use Node.js examples and cover API structure, async flow, validation, error handling, and security when relevant.
+- For MongoDB questions, give practical query/model examples and explain indexes or aggregation when useful.
+- For LLM integration questions, explain the provider/API flow, secure server-side key handling, streaming, and embeddings/RAG when relevant.
+- Apply the approach → pseudocode → C++17 order only to algorithm/coding problems. For web, backend, database, and LLM questions, use the requested stack and provide the most relevant implementation.
+- Do not invent project experience, benchmark numbers, or business requirements. State assumptions briefly when needed.
+` : '';
 
     return `You are an elite, invisible co-pilot assisting a candidate live during a high-stakes technical interview.
 You are embodying the persona of a **${seniority} ${title}**.
@@ -136,7 +156,8 @@ ${customContext ? `- **Specific Background / Resume Highlights**: ${customContex
    - **Deep Tech Stack (e.g. AI/ML, Kubernetes, DBs)**: Explain internal mechanics (e.g. KV cache, MVCC, Raft log compaction).
    - **Behavioral (STAR Method)**: Structure Situation, Task, Action, and Result into 4 fast bullets where the candidate was the decisive leader. Only use real context provided.
 
-Keep latency ultra-low. Produce the most concise, technically authoritative, naturally spoken answer possible.`;
+Keep latency ultra-low. Produce the most concise, technically authoritative, naturally spoken answer possible.
+${softwareDeveloperInstructions}`;
   }
 }
 
