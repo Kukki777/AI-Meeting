@@ -24,6 +24,15 @@ const imageChip = document.getElementById('imageChip');
 const imageThumb = document.getElementById('imageThumb');
 let attachedImage = '';
 
+function addTranscriptToQuestion(text) {
+  const transcript = String(text || '').trim();
+  if (!transcript) return;
+  const existing = manualInput.value.trim();
+  const nextValue = existing ? `${existing} ${transcript}` : transcript;
+  manualInput.value = nextValue;
+  manualInput.setSelectionRange(nextValue.length, nextValue.length);
+}
+
 // Modal Elements
 const roleModal = document.getElementById('roleModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
@@ -371,8 +380,9 @@ function setupIPCListeners() {
   // 6. Live Transcript Ticker
   window.electronAPI.onTranscript((data) => {
     if (data && data.text) {
-      speakerTag.textContent = 'INTERVIEWER:';
-      tickerText.textContent = data.text;
+      speakerTag.textContent = 'TRANSCRIPT:';
+      tickerText.textContent = 'Edit the recognized text below, then press send.';
+      addTranscriptToQuestion(data.text);
     }
   });
 
@@ -421,6 +431,7 @@ function setupEventListeners() {
     speakerTag.textContent = 'YOU / QUERY:';
     tickerText.textContent = q || 'Question from attached image';
     manualInput.value = '';
+    manualInput.setSelectionRange(0, 0);
     if (window.electronAPI) {
       if (attachedImage) {
         const image = attachedImage; setAttachedImage(''); questionImage.value = '';
@@ -703,7 +714,14 @@ async function finalizeAndSendUtterance() {
     tickerText.textContent = 'Transcribing question via Groq Whisper...';
 
     if (window.electronAPI && window.electronAPI.processAudioChunk) {
-      await window.electronAPI.processAudioChunk(wavBuffer);
+      const result = await window.electronAPI.processAudioChunk(wavBuffer);
+      if (result?.filtered) {
+        speakerTag.textContent = 'MICROPHONE:';
+        tickerText.textContent = 'No clear speech detected. Listening for questions...';
+      } else if (result && !result.success && result.error) {
+        speakerTag.textContent = 'AUDIO ERROR:';
+        tickerText.textContent = result.error;
+      }
     }
   } else {
     audioChunks = [];

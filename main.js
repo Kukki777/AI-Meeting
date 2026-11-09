@@ -125,7 +125,7 @@ function registerShortcuts() {
 // ── Wire Streaming LLM & STT to IPC ──
 function setupIPCHandlers() {
   ipcMain.handle('paste-text', () => clipboard.readText());
-  // Manual or Auto Question Submission
+  // Manual question submission. Audio transcription is only a draft until the user sends it.
   ipcMain.handle('ask-llm', async (_event, questionText) => {
     if (!questionText || !questionText.trim()) return;
 
@@ -155,72 +155,14 @@ function setupIPCHandlers() {
   ipcMain.handle('process-audio-chunk', async (_event, arrayBuffer) => {
     if (!arrayBuffer) return { success: false, error: 'Empty audio' };
     const buffer = Buffer.from(arrayBuffer);
-    const systemPrompt = roleEngine.generateSystemPrompt();
 
     try {
-      let transcribedText = '';
-
-      // 1. Ultra-fast Groq Whisper Transcription (~295ms)
-      const groqKey = process.env.GROQ_API_KEY || config.groqApiKey;
-      if (groqKey) {
-        try {
-          transcribedText = await sttService.transcribeWavInMemory(buffer);
-        } catch (sttErr) {
-          console.warn('[STT] Groq Whisper failed, trying fallback:', sttErr.message);
-        }
-      }
-
-      // If valid non-hallucinatory question was transcribed
+      const transcribedText = await sttService.transcribeWavInMemory(buffer);
       if (transcribedText && transcribedText.trim().length > 3) {
         const cleanQuestion = transcribedText.trim();
         console.log(`[STT] Interviewer Question Detected: "${cleanQuestion}"`);
-
-        // Send to HUD ticker immediately
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('transcript-received', {
-            text: cleanQuestion,
-            provider: 'groq-whisper'
-          });
-        }
-
-        conversationHistory.push({ speaker: 'interviewer', text: cleanQuestion, timestamp: Date.now() });
-
-        // Stream LLM answer
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('llm-start', { question: cleanQuestion });
-        }
-
-        const fullResponse = await llmService.streamResponse(
-          cleanQuestion,
-          systemPrompt,
-          conversationHistory
-        );
-
-        if (fullResponse) {
-          conversationHistory.push({ speaker: 'candidate', text: fullResponse, timestamp: Date.now() });
-        }
         return { success: true, text: cleanQuestion };
       }
-
-      // 2. Multimodal Audio Fallback (Gemini) if Whisper had no key or errored
-      const geminiKey = process.env.GEMINI_API_KEY || config.geminiApiKey;
-      if (!groqKey && geminiKey) {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('llm-start', { mode: 'audio' });
-        }
-
-        const fullResponse = await llmService.streamAudioResponse(
-          buffer,
-          systemPrompt,
-          conversationHistory
-        );
-
-        if (fullResponse && !fullResponse.includes('NO_QUESTION')) {
-          conversationHistory.push({ speaker: 'candidate', text: fullResponse, timestamp: Date.now() });
-        }
-        return { success: true };
-      }
-
       return { success: true, filtered: true };
     } catch (error) {
       console.error('[Audio Pipeline Error]:', error);
@@ -268,24 +210,10 @@ function setupIPCHandlers() {
     }
   });
 
-  // STT Transcription handling (for WebSocket streams like Deepgram)
+  // Final speech transcripts become editable drafts. The send button starts generation.
   sttService.on('transcript', (data) => {
-    if (data.provider && data.provider.startsWith('groq')) return; // Already handled in process-audio-chunk
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('transcript-received', data);
-      
-      // Auto-trigger LLM if it's a finished interviewer question
-      if (data.isFinal && data.text.length > 5) {
-        mainWindow.webContents.send('llm-start', { question: data.text });
-        const systemPrompt = roleEngine.generateSystemPrompt();
-        llmService.streamResponse(data.text, systemPrompt, conversationHistory)
-          .then((fullText) => {
-            conversationHistory.push({ speaker: 'candidate', text: fullText });
-          })
-          .catch((err) => {
-            mainWindow.webContents.send('llm-error', { error: err.message });
-          });
-      }
     }
   });
 

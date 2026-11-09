@@ -10,6 +10,15 @@ const ui = {
 };
 let attachedImage = '';
 
+function addTranscriptToQuestion(text) {
+  const transcript = String(text || '').trim();
+  if (!transcript) return;
+  const existing = ui.manualInput.value.trim();
+  const nextValue = existing ? `${existing} ${transcript}` : transcript;
+  ui.manualInput.value = nextValue;
+  ui.manualInput.setSelectionRange(nextValue.length, nextValue.length);
+}
+
 const defaults = { title: 'Senior AI / Machine Learning Engineer', seniority: 'Staff / Senior', specializations: ['LLMs', 'vLLM/TensorRT-LLM', 'PyTorch', 'RAG', 'Distributed Training', 'Quantization'], preferredLanguage: 'Python', customContext: '' };
 const presets = {
   'ai-engineer': { title: 'Senior AI / Machine Learning Engineer', seniority: 'Senior (5+ yrs)', specializations: ['LLM Serving (vLLM, SGLang)', 'RAG & Vector Search', 'Fine-Tuning (LoRA/QLoRA)', 'PyTorch/CUDA', 'Evaluation & Guardrails'], preferredLanguage: 'Python', customContext: 'Expertise in scaling generative AI workloads, optimizing TTFT and throughput, handling context lengths, and production inference.' },
@@ -112,7 +121,10 @@ async function transcribe(buffer) {
   try {
     const response = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ audio: bufferToBase64(buffer) }) });
     const data = await response.json(); if (!response.ok) throw new Error(data.error);
-    if (data.text && data.text.length > 3) { setMessage('INTERVIEWER:', data.text); await ask(data.text); }
+    if (data.text && data.text.length > 3) {
+      addTranscriptToQuestion(data.text);
+      setMessage('TRANSCRIPT READY:', 'Edit the recognized text below, then press send.');
+    }
     else setMessage('INTERVIEWER:', 'No clear speech detected. Listening for questions...');
   } catch (e) { setMessage('AUDIO ERROR:', e.message); }
 }

@@ -407,6 +407,8 @@ pre {
   color: #fff;
   font-size: 12px;
   outline: none;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 #manualInput:focus {
