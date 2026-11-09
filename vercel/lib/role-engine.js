@@ -94,6 +94,7 @@ class RoleEngine {
     const softwareDeveloperInstructions = this.currentRole.presetId === 'software-developer' ? `
 
 ### SOFTWARE DEVELOPER ANSWER RULES:
+- These role-specific output rules override the generic section formatting above when answering the question types they cover.
 - For DSA, coding challenges, or algorithm questions, ALWAYS use these sections in this exact order: **APPROACH** (explain the key idea and time/space complexity), **PSEUDOCODE** (language-neutral steps), then **C++17 CODE** (complete runnable solution). Keep the explanation concise and do not omit pseudocode.
 - For JavaScript/web development questions, answer the actual question using JavaScript or TypeScript as appropriate, including browser/UI concepts when relevant.
 - For Node.js/backend questions, use Node.js examples and cover API structure, async flow, validation, error handling, and security when relevant.
