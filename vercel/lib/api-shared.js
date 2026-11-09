@@ -1,22 +1,4 @@
 const RoleEngine = require('./role-engine');
-const crypto = require('node:crypto');
-
-function authorize(req, res) {
-  const expected = process.env.APP_PASSWORD;
-  if (!expected) {
-    res.status(503).json({ error: 'Deployment is not configured: set APP_PASSWORD in Vercel environment variables.' });
-    return false;
-  }
-  const supplied = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  const a = Buffer.from(supplied);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-    res.status(401).json({ error: 'Enter the app password to continue.' });
-    return false;
-  }
-  return true;
-}
-
 function systemPrompt(role) {
   const engine = new RoleEngine();
   if (role && typeof role === 'object') engine.setCustomRole(role);
@@ -78,4 +60,4 @@ async function readSSE(response, extract, onToken) {
   return fullText;
 }
 
-module.exports = { authorize, selectGroqModel, sse, forwardProviderStream };
+module.exports = { selectGroqModel, sse, forwardProviderStream };

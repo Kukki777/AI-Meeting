@@ -1,8 +1,7 @@
-const { authorize, sse, forwardProviderStream } = require('../lib/api-shared');
+const { sse, forwardProviderStream } = require('../lib/api-shared');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST.' });
-  if (!authorize(req, res)) return;
   const { question, role, history = [] } = req.body || {};
   if (typeof question !== 'string' || !question.trim()) return res.status(400).json({ error: 'Question is required.' });
   if (!Array.isArray(history) || history.length > 20) return res.status(400).json({ error: 'Invalid conversation history.' });

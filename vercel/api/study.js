@@ -1,8 +1,5 @@
-const { authorize } = require('../lib/api-shared');
-
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST.' });
-  if (!authorize(req, res)) return;
   const { image = '', question = '', subject = 'General' } = req.body || {};
   if (typeof image !== 'string' || image.length > 3_800_000 || (image && !/^data:image\/(jpeg|png|webp);base64,/i.test(image))) {
     return res.status(400).json({ error: 'Choose a JPEG, PNG, or WebP image under 3 MB.' });

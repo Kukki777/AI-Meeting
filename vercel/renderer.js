@@ -20,7 +20,6 @@ const presets = {
 };
 let role = JSON.parse(localStorage.getItem('copilot-role') || 'null') || defaults;
 let history = JSON.parse(sessionStorage.getItem('copilot-history') || '[]');
-let password = sessionStorage.getItem('copilot-password') || '';
 let controller = null;
 let currentRawAnswer = '';
 let audioContext = null, mediaStream = null, processor = null, audioChunks = [], silenceTimer = null;
@@ -68,20 +67,6 @@ function renderAnswer(raw, streaming = true) {
   ui.responseViewport.scrollTop = ui.responseViewport.scrollHeight;
 }
 
-function showLogin() {
-  const cover = document.createElement('div'); cover.className = 'modal-backdrop'; cover.style.cssText = 'display:flex;z-index:10000';
-  cover.innerHTML = '<form class="modal-card" id="loginForm"><div class="modal-header"><h3>Open Co-Pilot Web</h3></div><div class="modal-body"><p>Enter the shared app password configured for this deployment.</p><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="App password"><p id="loginError" style="color:#ef4444"></p></div><div class="modal-footer"><button class="btn btn-primary">Continue</button></div></form>';
-  document.body.append(cover);
-  cover.querySelector('form').addEventListener('submit', async e => {
-    e.preventDefault(); password = cover.querySelector('#loginPassword').value;
-    let res;
-    try { res = await fetch('/api/session', { method: 'GET', headers: { Authorization: `Bearer ${password}` } }); }
-    catch (_) { cover.querySelector('#loginError').textContent = 'Could not reach the server. Check the deployment and try again.'; return; }
-    if (res.status === 401 || res.status === 503) { cover.querySelector('#loginError').textContent = (await res.json()).error; return; }
-    sessionStorage.setItem('copilot-password', password); cover.remove();
-  });
-}
-
 function parseEvents(stream, onEvent) {
   const reader = stream.getReader(), decoder = new TextDecoder(); let buffer = '';
   return (async () => {
@@ -105,8 +90,7 @@ async function ask(question, image = '') {
   ui.statusDot.classList.add('pulsing'); ui.latencyPill.textContent = 'Speaking...';
   $('stopBtn').style.display = 'inline-flex';
   try {
-    const response = await fetch(image ? '/api/study' : '/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${password}` }, body: JSON.stringify({ question, image, subject: role.title, role, history: history.slice(0, -1) }), signal: controller.signal });
-    if (response.status === 401) { sessionStorage.removeItem('copilot-password'); password = ''; showLogin(); throw new Error('Please sign in again.'); }
+    const response = await fetch(image ? '/api/study' : '/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, image, subject: role.title, role, history: history.slice(0, -1) }), signal: controller.signal });
     if (!response.ok) throw new Error((await response.json()).error || 'Request failed.');
     if (image) {
       const data = await response.json();
@@ -126,7 +110,7 @@ async function ask(question, image = '') {
 async function transcribe(buffer) {
   setMessage('TRANSCRIBING:', 'Transcribing speech...');
   try {
-    const response = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${password}` }, body: JSON.stringify({ audio: bufferToBase64(buffer) }) });
+    const response = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ audio: bufferToBase64(buffer) }) });
     const data = await response.json(); if (!response.ok) throw new Error(data.error);
     if (data.text && data.text.length > 3) { setMessage('INTERVIEWER:', data.text); await ask(data.text); }
     else setMessage('INTERVIEWER:', 'No clear speech detected. Listening for questions...');
@@ -218,6 +202,5 @@ function init() {
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'KeyR') { history = []; sessionStorage.removeItem('copilot-history'); setMessage('HISTORY:', 'Conversation history cleared.'); }
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'KeyX') { if (panel.classList.contains('hidden')) restore.click(); else hidePanel(); }
   });
-  if (!password) showLogin();
 }
 window.addEventListener('DOMContentLoaded', init);

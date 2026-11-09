@@ -1,8 +1,5 @@
-const { authorize } = require('../lib/api-shared');
-
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST.' });
-  if (!authorize(req, res)) return;
   const { audio } = req.body || {};
   if (typeof audio !== 'string' || audio.length > 3_000_000) return res.status(400).json({ error: 'Missing or oversized audio segment.' });
   const key = process.env.GROQ_API_KEY;
