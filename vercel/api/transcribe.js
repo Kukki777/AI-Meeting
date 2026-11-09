@@ -52,7 +52,7 @@ module.exports = async function handler(req, res) {
     text = (result.candidates?.[0]?.content?.parts || []).map(part => part.text || '').join('').trim();
     provider = 'gemini';
   }
-  if (!text && key && !geminiKey) {
+  if (!provider && key && !geminiKey) {
     return res.status(502).json({ error: 'Groq transcription failed and no Gemini fallback is configured.' });
   }
   const clean = text.toLowerCase().replace(/[.,!?;:]/g, '').trim();
